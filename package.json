@@ -1,0 +1,15 @@
+{
+  "name": "times-all",
+  "version": "1.0.0",
+  "main": "index.ts",
+  "author": "Masayuki Uehara <munky69rock@gmail.com>",
+  "license": "MIT",
+  "dependencies": {
+    "@slack/bolt": "^2.3.0",
+    "ts-node": "^9.0.0",
+    "typescript": "^4.0.2"
+  },
+  "scripts": {
+    "start": "ts-node index.ts"
+  }
+}
