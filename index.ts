@@ -55,7 +55,10 @@ app.event("message", async ({ event }) => {
     });
 
     const originalText = event.text || "";
-    let leadText = originalText.replace(/<([^>]+)>/g, "$1").slice(0, 16);
+    let leadText = originalText
+      .replace(/<([^>]+)>/g, "$1")
+      .replace(/\n+/g, " ")
+      .slice(0, 16);
     if (leadText !== originalText) {
       leadText = `${leadText}...`;
     }
