@@ -83,5 +83,5 @@ app.event("message", async ({ event }) => {
 
 (async () => {
   await app.start(process.env.PORT || 3000);
-  console.log("⚡️ Bolt app is running!");
+  console.log("⚡️ Times All app is running!");
 })();
