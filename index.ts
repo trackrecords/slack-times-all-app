@@ -64,7 +64,7 @@ app.event("message", async ({ event }) => {
     let leadText = originalText
       .replace(/<([^>]+)>/g, "$1")
       .replace(/\n+/g, " ")
-      .slice(0, 16);
+      .slice(0, 32);
     if (leadText !== originalText) {
       leadText = `${leadText}...`;
     }
