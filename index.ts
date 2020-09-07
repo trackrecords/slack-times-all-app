@@ -48,7 +48,13 @@ app.event("message", async ({ event }) => {
   }
 
   try {
-    const permalink = await app.client.chat.getPermalink({
+    const userRes = await app.client.users.info({
+      token: botToken,
+      user: event.user,
+    });
+    const user = userRes.user as any;
+
+    const permalinkRes = await app.client.chat.getPermalink({
       channel: event.channel,
       token: oauthAccessToken,
       message_ts: event.ts,
@@ -66,7 +72,9 @@ app.event("message", async ({ event }) => {
     await app.client.chat.postMessage({
       token: botToken,
       channel: timesAllChannel,
-      text: `<#${event.channel}> <${permalink.permalink}|${leadText}>`,
+      text: `<#${event.channel}> <${permalinkRes.permalink}|${leadText}>`,
+      username: user.profile.display_name || user.profile.real_name,
+      icon_url: user.profile.image_512,
     });
   } catch (err) {
     console.error(err);
