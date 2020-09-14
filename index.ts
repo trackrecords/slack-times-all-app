@@ -3,6 +3,7 @@ import { App } from "@slack/bolt";
 const timesAllChannel: string = process.env.TIMES_ALL_CHANNEL!;
 const botToken: string = process.env.SLACK_BOT_TOKEN!;
 const oauthAccessToken: string = process.env.OAUTH_ACCESS_TOKEN!;
+const acceptableSubtypes = ["file_share", "thread_broadcast"];
 
 const app = new App({
   signingSecret: process.env.SLACK_SIGNING_SECRET,
@@ -10,7 +11,7 @@ const app = new App({
 });
 
 app.event("message", async ({ event }) => {
-  if (event.subtype && event.subtype !== "file_share") {
+  if (event.subtype && !acceptableSubtypes.includes(event.subtype)) {
     console.log("skip subtype event");
     console.dir(event);
     return;
