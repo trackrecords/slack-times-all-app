@@ -1,4 +1,5 @@
-import { App } from "@slack/bolt";
+import { App, MessageEvent } from "@slack/bolt";
+import { WebAPICallResult } from "@slack/web-api";
 
 const timesAllChannel: string = process.env.TIMES_ALL_CHANNEL!;
 const botToken: string = process.env.SLACK_BOT_TOKEN!;
@@ -10,73 +11,142 @@ const app = new App({
   token: botToken,
 });
 
-app.event("message", async ({ event }) => {
+function shouldContinue(event: MessageEvent): boolean {
   if (event.subtype && !acceptableSubtypes.includes(event.subtype)) {
     console.log("skip subtype event");
     console.dir(event);
-    return;
+    return false;
   }
 
   if (event.bot_id) {
     console.log("skip bot event");
-    return;
+    return false;
   }
 
   if (event.channel === timesAllChannel) {
     console.log("skip #times_all event");
-    return;
+    return false;
   }
 
   if (event.thread_ts) {
     console.log("skip thread event");
-    return;
+    return false;
   }
 
-  console.dir(event);
+  return true;
+}
 
+interface ConversationsInfoResult extends WebAPICallResult {
+  channel: {
+    name: string;
+  };
+}
+
+async function isTimesChannel(channelId: string): Promise<boolean> {
   try {
-    const channelInfoRes = await app.client.conversations.info({
-      channel: event.channel,
+    const { channel } = (await app.client.conversations.info({
+      channel: channelId,
       token: oauthAccessToken,
-    });
-    if (!(channelInfoRes.channel as any).name.startsWith("times")) {
+    })) as ConversationsInfoResult;
+    if (!channel.name.startsWith("times")) {
       console.log("not times channel");
-      return;
+      return false;
     }
   } catch (err) {
     console.error(err);
-    return;
+    return false;
   }
+  return true;
+}
+
+function omitMessage(message: string = ""): string {
+  let omittedMessage = message
+    .replace(/<([^>]+)>/g, "$1")
+    .replace(/\n+/g, " ")
+    .slice(0, 64);
+  if (omittedMessage !== message) {
+    omittedMessage = `${omittedMessage}...`;
+  }
+  return omittedMessage;
+}
+
+type User = {
+  profile: {
+    display_name: string;
+    real_name: string;
+    image_512: string;
+  };
+};
+
+async function fetchUser(userId: string): Promise<User> {
+  const { user } = await app.client.users.info({
+    token: botToken,
+    user: userId,
+  });
+  return user as User;
+}
+
+async function fetchPermalink(channel: string, ts: string): Promise<string> {
+  const { permalink } = await app.client.chat.getPermalink({
+    channel: channel,
+    token: oauthAccessToken,
+    message_ts: ts,
+  });
+  return permalink as string;
+}
+
+function extractLinks(message: string = ""): string[] {
+  const links: string[] = [];
+  const m = message.match(/<https?:\/\/[^>]+>/g);
+  if (!m) return links;
+  m.map((link) => link.replace(/^</, "").replace(/>$/, "")).forEach((link) =>
+    links.push(link)
+  );
+  return links;
+}
+
+async function buildMessage({
+  text = "",
+  channel,
+  ts,
+}: {
+  text?: string;
+  channel: string;
+  ts: string;
+}): Promise<string> {
+  const leadText = omitMessage(text);
+  const links = extractLinks(text);
+  const linkText = links.map((link) => `<${link}|link>`).join(" ");
+  const permalink = await fetchPermalink(channel, ts);
+
+  return `<#${channel}> <${permalink}|${leadText}> ${linkText}`;
+}
+
+async function postMessageAsUser(text: string, userId: string) {
+  const user = await fetchUser(userId);
+
+  await app.client.chat.postMessage({
+    token: botToken,
+    channel: timesAllChannel,
+    text,
+    username: user.profile.display_name || user.profile.real_name,
+    icon_url: user.profile.image_512,
+  });
+}
+
+app.event("message", async ({ event }) => {
+  if (!shouldContinue(event)) return;
+  if (!(await isTimesChannel(event.channel))) return;
+  console.dir(event);
 
   try {
-    const userRes = await app.client.users.info({
-      token: botToken,
-      user: event.user,
-    });
-    const user = userRes.user as any;
-
-    const permalinkRes = await app.client.chat.getPermalink({
+    const text = await buildMessage({
       channel: event.channel,
-      token: oauthAccessToken,
-      message_ts: event.ts,
+      ts: event.ts,
+      text: event.text,
     });
 
-    const originalText = event.text || "";
-    let leadText = originalText
-      .replace(/<([^>]+)>/g, "$1")
-      .replace(/\n+/g, " ")
-      .slice(0, 32);
-    if (leadText !== originalText) {
-      leadText = `${leadText}...`;
-    }
-
-    await app.client.chat.postMessage({
-      token: botToken,
-      channel: timesAllChannel,
-      text: `<#${event.channel}> <${permalinkRes.permalink}|${leadText}>`,
-      username: user.profile.display_name || user.profile.real_name,
-      icon_url: user.profile.image_512,
-    });
+    await postMessageAsUser(text, event.user);
   } catch (err) {
     console.error(err);
   }
