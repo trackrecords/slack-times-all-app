@@ -1,5 +1,6 @@
 import { App, MessageEvent } from "@slack/bolt";
 import { WebAPICallResult } from "@slack/web-api";
+import { URL } from "url";
 
 const timesAllChannel: string = process.env.TIMES_ALL_CHANNEL!;
 const botToken: string = process.env.SLACK_BOT_TOKEN!;
@@ -114,6 +115,12 @@ async function buildMessage({
   channel: string;
   ts: string;
 }): Promise<string> {
+  try {
+    // リンクのみの場合はそのまま流す
+    new URL(text);
+    return `<#${channel}> ${text}`;
+  } catch (_e) {}
+
   const leadText = omitMessage(text);
   const links = extractLinks(text);
   const linkText = links.map((link) => `<${link}|link>`).join(" ");
