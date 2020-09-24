@@ -117,7 +117,7 @@ async function buildMessage({
 }): Promise<string> {
   try {
     // リンクのみの場合はそのまま流す
-    new URL(text);
+    new URL(text.trim().replace(/^<|>$/g, ""));
     return `<#${channel}> ${text}`;
   } catch (_e) {}
 
