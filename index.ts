@@ -27,7 +27,7 @@ function shouldContinue(event: MessageEvent): boolean {
     return false;
   }
 
-  if (event.thread_ts) {
+  if (event.thread_ts && event.subtype !== "thread_broadcast") {
     console.log("skip thread event");
     return false;
   }
