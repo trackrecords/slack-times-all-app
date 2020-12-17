@@ -14,7 +14,6 @@
 4. `OAuth % Permissions` に移動、 `Bot Token Scopes` に以下を追加
 
    - `channels:history`
-   - `channels:read`
    - `chat:write`
    - `chat:write.customize`
    - `chat:write.public`

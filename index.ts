@@ -1,10 +1,8 @@
 import { App, MessageEvent } from "@slack/bolt";
-import { WebAPICallResult } from "@slack/web-api";
 import { URL } from "url";
 
 const timesAllChannel: string = process.env.TIMES_ALL_CHANNEL!;
 const botToken: string = process.env.SLACK_BOT_TOKEN!;
-const oauthAccessToken: string = process.env.OAUTH_ACCESS_TOKEN!;
 const acceptableSubtypes = ["file_share", "thread_broadcast"];
 
 const app = new App({
@@ -34,29 +32,6 @@ function shouldContinue(event: MessageEvent): boolean {
     return false;
   }
 
-  return true;
-}
-
-interface ConversationsInfoResult extends WebAPICallResult {
-  channel: {
-    name: string;
-  };
-}
-
-async function isTimesChannel(channelId: string): Promise<boolean> {
-  try {
-    const { channel } = (await app.client.conversations.info({
-      channel: channelId,
-      token: oauthAccessToken,
-    })) as ConversationsInfoResult;
-    if (!channel.name.startsWith("times")) {
-      console.log("not times channel");
-      return false;
-    }
-  } catch (err) {
-    console.error(err);
-    return false;
-  }
   return true;
 }
 
@@ -90,7 +65,7 @@ async function fetchUser(userId: string): Promise<User> {
 async function fetchPermalink(channel: string, ts: string): Promise<string> {
   const { permalink } = await app.client.chat.getPermalink({
     channel: channel,
-    token: oauthAccessToken,
+    token: botToken,
     message_ts: ts,
   });
   return permalink as string;
@@ -143,7 +118,6 @@ async function postMessageAsUser(text: string, userId: string) {
 
 app.event("message", async ({ event }) => {
   if (!shouldContinue(event)) return;
-  if (!(await isTimesChannel(event.channel))) return;
   console.dir(event);
 
   try {
