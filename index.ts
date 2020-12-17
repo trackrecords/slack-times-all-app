@@ -1,4 +1,5 @@
 import { App, MessageEvent } from "@slack/bolt";
+import { WebAPICallResult } from "@slack/web-api";
 import { URL } from "url";
 
 const timesAllChannel: string = process.env.TIMES_ALL_CHANNEL!;
@@ -32,6 +33,29 @@ function shouldContinue(event: MessageEvent): boolean {
     return false;
   }
 
+  return true;
+}
+
+interface ConversationsInfoResult extends WebAPICallResult {
+  channel: {
+    name: string;
+  };
+}
+
+async function isTimesChannel(channelId: string): Promise<boolean> {
+  try {
+    const { channel } = (await app.client.conversations.info({
+      channel: channelId,
+      token: botToken,
+    })) as ConversationsInfoResult;
+    if (!channel.name.startsWith("times")) {
+      console.log("not times channel");
+      return false;
+    }
+  } catch (err) {
+    console.error(err);
+    return false;
+  }
   return true;
 }
 
@@ -118,6 +142,7 @@ async function postMessageAsUser(text: string, userId: string) {
 
 app.event("message", async ({ event }) => {
   if (!shouldContinue(event)) return;
+  if (!(await isTimesChannel(event.channel))) return;
   console.dir(event);
 
   try {

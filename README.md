@@ -11,9 +11,10 @@
 
 2. http://api.slack.com/apps?new_app=1 にアクセスして Slack アプリの作成
 3. `App Credentials` の `Signing Secret` をコピーしておく
-4. `OAuth % Permissions` に移動、 `Bot Token Scopes` に以下を追加
+4. `OAuth & Permissions` に移動、 `Bot Token Scopes` に以下を追加
 
    - `channels:history`
+   - `channels:read`
    - `chat:write`
    - `chat:write.customize`
    - `chat:write.public`
@@ -53,4 +54,4 @@
     - `Request URL` に ngrok などが発行した URL + `/slack/events` を入力 (例: https://xxxxxxxxxxxx.ngrok.io/slack/events)
     - `Subscribe to bot events` に `message.channels` を追加
 
-11. times-all bot を有効化したい times チャンネルに bot を invite
+11. 再インストールする旨のバナーが出てくる場合はリンクから再インストールの実行
